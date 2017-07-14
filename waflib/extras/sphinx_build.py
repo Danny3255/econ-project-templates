@@ -32,10 +32,12 @@ import shutil
 
 import waflib
 from waflib.Configure import conf
+import sphinx
 from sphinx.application import Sphinx
+from waflib import Task
 
 
-MAKEINFO_VERSION_RE = re.compile(r'(?:texi2any|makeinfo) \(GNU texinfo\) (\d+)\.(\d+)')
+MAKEINFO_VERSION_RE = re.compile(r'(makeinfo|texi2any) \(GNU texinfo\) (\d+)\.(\d+)')
 # UTF-8 support was introduced in this version. See the
 # 'warn_about_old_makeinfo' method.
 # http://svn.savannah.gnu.org/viewvc/*checkout*/trunk/NEWS?root=texinfo
@@ -234,12 +236,12 @@ class sphinx_build_task(waflib.Task.Task):
         # BuildEnvironment.update() docstring: "(Re-)read all files new or
         # changed since last update." Note that this only returns *doc names
         # that have been updated*.
-        updated_doc_names = app.env.update(
-            app.config,
-            app.srcdir,
-            app.doctreedir,
-            app,
-        )
+        args = [app.config, app.srcdir, app.doctreedir]
+        if sphinx.version_info[0] == 1 and sphinx.version_info[1] <= 5:
+            args.append(app)
+
+        updated_doc_names = app.env.update(*args)
+
         # Avoid duplicates by using a set.
         dependency_nodes = set()
 
